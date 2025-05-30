@@ -48,8 +48,8 @@ public class HomeController {
 	        while(rs.next()) {
 	            String name = rs.getString(2);
 	            Long id = rs.getLong(1);
-	            String email = rs.getString(2);
-	            String password = rs.getString(2);
+	            String email = rs.getString(3);
+	            String password = rs.getString(4);
 	            Usuario temp = new Usuario(id, name, email, password);
 	            users.add(temp);
 	        }
