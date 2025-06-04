@@ -2,7 +2,11 @@ package com.programacion.app.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.luv2code.jsf.jdbc.Student;
@@ -23,81 +27,113 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-
 @Controller
-@RequestMapping("/security")
 public class StudentControler {
-List<Usuario> users;
-	
-	private List<Student> students;
-	private StudentDbUtil studentDbUtil;
-	private Logger logger = Logger.getLogger(getClass().getName());
-	
-	public StudentControler() throws Exception {
-		students = new ArrayList<>();
-		
-		studentDbUtil = StudentDbUtil.getInstance();
-	}
-	
-	@PostConstruct
-	public void init() {
-		logger.info("Loading students");
-		students.clear();
-		try {
-			// get all students from database
-			students = studentDbUtil.getStudents();
-		} catch (Exception exc) {
-			// send this to server logs
-			logger.log(Level.SEVERE, "Error loading students", exc);
-			
-		}
-	}
-	
-	public void initAntiguo() {
-	    Connection conexion = null; 
-	    users = new java.util.LinkedList<Usuario>();
-	    try {
-	        Class.forName("org.postgresql.Driver");
-	        String connectionUrl = "jdbc:postgresql://localhost:5434/spring_mvc?user=sa&password=123";
-	        conexion = DriverManager.getConnection(connectionUrl);
-	    } catch (SQLException e) {
-	        System.out.println("SQL Exception: "+ e.toString());
-	    } catch (ClassNotFoundException cE) {
-	        System.out.println("Class Not Found Exception: "+ cE.toString());
-	    }
-	    
-	    String sql = "SELECT id, nombre, email, password FROM users LIMIT 1000;";
-	    
-	    try (PreparedStatement cmd = conexion.prepareStatement(sql)) {
-	        ResultSet rs = cmd.executeQuery();
-	        
-	        while(rs.next()) {
-	            String name = rs.getString(2);
-	            Long id = rs.getLong(1);
-	            String email = rs.getString(3);
-	            String password = rs.getString(4);
-	            Usuario temp = new Usuario(id, name, email, password);
-	            users.add(temp);
-	        }
-	        conexion.close();
-	    }
-	    catch(Exception ex) {
-	        ex.printStackTrace(); // Mejor manejo de errores
-	    }
-	}
-	
-	
-	@RequestMapping("/list-student")
-    public String listStudent(Model model) {
-    	model.addAttribute("students", students);
-    	return "list-students";
+    List<Usuario> users;
+    
+    private List<Student> students;
+    private StudentDbUtil studentDbUtil;
+    private Logger logger = Logger.getLogger(getClass().getName());
+    
+    public StudentControler() throws Exception {
+        students = new ArrayList<>();
+        studentDbUtil = StudentDbUtil.getInstance();
     }
-	
+    
+    @PostConstruct
+    public void init() {
+        logger.info("Loading students");
+        students.clear();
+        try {
+            // get all students from database
+            students = studentDbUtil.getStudents();
+        } catch (Exception exc) {
+            logger.log(Level.SEVERE, "Error loading students", exc);
+        }
+    }
+    
+    @RequestMapping("/students/")
+    public String listStudent(Model model) {
+    	init();
+        model.addAttribute("students", students);
+        return "list-students";
+    }
+    
+    @RequestMapping(value = "/students/new", method = RequestMethod.GET)
+    public String showAddForm(Model model) {
+        model.addAttribute("student", new Student());
+        return "student-form";
+    }
+
+    @RequestMapping(value = "/students/edit/{id}", method = RequestMethod.GET)
+    public String showEditForm(@PathVariable("id") int id, Model model) {
+        try {
+            Student student = studentDbUtil.getStudent(id);
+            model.addAttribute("student", student);
+        } catch (Exception exc) {
+            logger.log(Level.SEVERE, "Error loading student", exc);
+            model.addAttribute("errorMessage", "Error loading student");
+            return "redirect:/students/";
+        }
+        return "student-form";
+    }
+
+    @RequestMapping(value = "/students/save", method = RequestMethod.POST)
+    public String saveStudent(@ModelAttribute("student") Student student, 
+                            BindingResult result, 
+                            Model model) {
+        
+        // Validaciones básicas
+        if (student.getFirstName() == null || student.getFirstName().trim().isEmpty()) {
+            result.rejectValue("firstName", "error.student", "El nombre es requerido");
+        }
+        
+        if (student.getLastName() == null || student.getLastName().trim().isEmpty()) {
+            result.rejectValue("lastName", "error.student", "El apellido es requerido");
+        }
+        
+        if (student.getEmail() == null || student.getEmail().trim().isEmpty()) {
+            result.rejectValue("email", "error.student", "El email es requerido");
+        }
+        
+        if (result.hasErrors()) {
+            return "student-form";
+        }
+        
+        try {
+            if (student.getId() == 0) {
+                // Crear nuevo estudiante
+                studentDbUtil.addStudent(student);
+                model.addAttribute("message", "Estudiante creado exitosamente");
+            } else {
+                // Actualizar estudiante existente
+                studentDbUtil.updateStudent(student);
+                model.addAttribute("message", "Estudiante actualizado exitosamente");
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error al guardar estudiante", e);
+            model.addAttribute("errorMessage", "Error al guardar estudiante");
+            return "student-form";
+        }
+        
+        return "redirect:/";
+    }
+
+    @RequestMapping(value = "/students/delete/{id}", method = RequestMethod.GET)
+    public String deleteStudent(@PathVariable("id") int id, Model model) {
+        try {
+            studentDbUtil.deleteStudent(id);
+            //model.addAttribute("message", "Estudiante eliminado correctamente");
+        } catch (Exception exc) {
+            logger.log(Level.SEVERE, "Error deleting student", exc);
+            //model.addAttribute("errorMessage", "Error al eliminar estudiante");
+        }
+        return "redirect:/students/";
+    }
+    
     @RequestMapping(value = "listUsers.htm")
-    public @ResponseBody
-    String listaTodosUsuarios() {
-    	Student student = students.get(0);
+    public @ResponseBody String listaTodosUsuarios() {
+        Student student = students.get(0);
         return JSONSerializer.toJSON(student).toString();
     }
-
 }

@@ -42,10 +42,39 @@
         tr:nth-child(even) {
             background-color: #f9f9f9;
         }
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .button.edit {
+            background-color: #2196F3; /* Azul */
+        }
+        .button.delete {
+            background-color: #f44336; /* Rojo */
+        }
+        .button-container {
+            margin-bottom: 20px;
+        }
+        .actions-cell {
+            white-space: nowrap; /* Evita que los botones se apilen */
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="button-container">
+            <a href="${pageContext.request.contextPath}/students/new" class="button">Crear Estudiante</a>
+        </div>
+        
         <h3>Lista de Estudiantes:</h3>
         <table>
             <thead>
@@ -54,6 +83,7 @@
                     <th>Nombre</th>
                     <th>Apellido</th>
                     <th>Email</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -63,6 +93,19 @@
                         <td>${student.firstName}</td>
                         <td>${student.lastName}</td>
                         <td>${student.email}</td>
+                        <td class="actions-cell">
+                            <!-- Botón Editar -->
+                            <a href="${pageContext.request.contextPath}/students/edit/${student.id}" 
+                               class="button edit">
+                                Editar
+                            </a>
+                            <!-- Botón Eliminar -->
+                            <a href="${pageContext.request.contextPath}/students/delete/${student.id}" 
+                               class="button delete" 
+                               onclick="return confirm('¿Estás seguro de que quieres eliminar este estudiante?')">
+                                Eliminar
+                            </a>
+                        </td>
                     </tr>
                 </c:forEach>
             </tbody>

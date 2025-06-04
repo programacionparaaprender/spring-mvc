@@ -18,6 +18,7 @@ import com.programacion.app.repository.UsuarioDao;
 
 import java.util.List;
 @Controller
+@RequestMapping("/")
 public class HomeController {
     
 	List<Usuario> users;
@@ -64,9 +65,13 @@ public class HomeController {
 	 * @Autowired private UsuarioDao usuarioDao;
 	 */
     
-	
-    @RequestMapping("/")
+	@RequestMapping("/")
     public String index(Model model) {
+    	return "redirect:/students/";
+    }
+	
+    @RequestMapping("/ed")
+    public String index2(Model model) {
 		
 		int totalUsuarios = users.size();//usuarioDao.contarUsuarios();
 		model.addAttribute("totalUsuarios", totalUsuarios);
